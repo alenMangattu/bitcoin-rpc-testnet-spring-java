@@ -13,7 +13,7 @@ public class BtcRpcInterface {
     // HTTP client for making RPC calls
     private static final HttpClient client = HttpClient.newHttpClient();
     // Bitcoin Core RPC endpoint (localhost)
-    private static final String RPC_URL = "http://127.0.0.1:6942";
+    private static final String RPC_URL = "http://127.0.0.1:18332";
 
     // Helper method to create JSON-RPC request objects
     // Takes method name, ID and optional parameters
@@ -29,8 +29,8 @@ public class BtcRpcInterface {
     }
 
     // Main method to send RPC requests to Bitcoin Core
-    // Takes a JSON request body and returns JSON response
-    public static JSONObject callRpcMethod(JSONObject requestBody) {
+    // Takes a JSON request body and optional wallet address, returns JSON response
+    public static JSONObject callRpcMethod(JSONObject requestBody, String walletAddress) {
         try {
             // Validate method exists
             if (requestBody.get("method") == null)
@@ -39,9 +39,12 @@ public class BtcRpcInterface {
             // Add JSON-RPC version
             requestBody.put("jsonrpc", "1.0");
 
+            // Build URL based on whether wallet address is provided
+            String url = walletAddress != null ? RPC_URL + "/wallet/" + walletAddress : RPC_URL;
+
             // Build HTTP request with headers
             HttpRequest request = HttpRequest.newBuilder()
-                    .uri(URI.create(RPC_URL))
+                    .uri(URI.create(url))
                     .header("Content-Type", "application/json")
                     // Basic auth header (base64 encoded credentials)
                     .header("Authorization", "Basic Yml0Y29pbnVzZXI6YnRjcGFzc3dvcmQ=")
@@ -57,5 +60,10 @@ public class BtcRpcInterface {
             e.printStackTrace();
             return null;
         }
+    }
+
+    // Overloaded method for backward compatibility
+    public static JSONObject callRpcMethod(JSONObject requestBody) {
+        return callRpcMethod(requestBody, null);
     }
 }
