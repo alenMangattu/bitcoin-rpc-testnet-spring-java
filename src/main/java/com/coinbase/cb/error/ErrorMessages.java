@@ -9,7 +9,7 @@ public enum ErrorMessages {
     ERROR_CREATING_WALLET("An error occurred while attempting to create the wallet. Please try again."),
     INVALID_CREDENTIALS("Invalid email or password."),
     USER_NOT_FOUND("User not found with the provided email."),
-
+    ERROR_GETTING_ADDRESS("An error occurred while attempting to get the address. Please try again."),
 
 
     ;

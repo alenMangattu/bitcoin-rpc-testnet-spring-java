@@ -26,7 +26,6 @@ public class ApiController {
     @PostMapping("/auth/register")
     public ResponseEntity<UserDTO> signup(@RequestBody User user) {
         return signUpController.execute(user);
-//        return signUpController.execute(null);
     }
 
     @PostMapping("/auth/login")

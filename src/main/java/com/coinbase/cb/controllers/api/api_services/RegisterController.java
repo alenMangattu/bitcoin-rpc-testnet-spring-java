@@ -58,6 +58,7 @@ public class RegisterController implements Query<User, UserDTO> {
     private static Wallet createWallet(String email) {
         String hashedEmail = HashUtil.getMD5(email + Math.random());
 
+        //Create wallet on btc
         JSONObject reqJson = BtcRpcInterface.generateReqJson("id", "createwallet", hashedEmail);
         JSONObject execute = BtcRpcInterface.callRpcMethod(reqJson);
 
@@ -65,15 +66,29 @@ public class RegisterController implements Query<User, UserDTO> {
             throw new CustomErrorResponse(ErrorMessages.ERROR_CREATING_WALLET.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
-        String address = (String) new JSONObject(execute.get("result").toString()).get("name");
-        if (address == null || address.isEmpty()) {
+        String walletName = (String) new JSONObject(execute.get("result").toString()).get("name");
+        if (walletName == null || walletName.isEmpty()) {
             throw new CustomErrorResponse(ErrorMessages.ERROR_CREATING_WALLET.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
         }
 
         Wallet wallet = new Wallet();
-        wallet.setWalletName(address);
+        wallet.setWalletName(walletName);
         wallet.setBalance(0);
-        wallet.setAddress("2");
+
+        //Get address from btc
+        reqJson = BtcRpcInterface.generateReqJson("id", "getnewaddress");
+        execute = BtcRpcInterface.callRpcMethod(reqJson, walletName);
+
+        if (execute == null || execute.get("result") == null) {
+            throw new CustomErrorResponse(ErrorMessages.ERROR_GETTING_ADDRESS.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        String address = execute.get("result").toString();
+        if (address == null || address.isEmpty()) {
+            throw new CustomErrorResponse(ErrorMessages.ERROR_GETTING_ADDRESS.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        wallet.setAddress(address);
 
         return wallet;
     }
