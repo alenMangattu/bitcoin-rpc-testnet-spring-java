@@ -1,6 +1,5 @@
 package com.coinbase.cb.controllers;
 
-import org.json.JSONObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.validation.annotation.Validated;

@@ -26,10 +26,12 @@ public class WebConfig implements WebMvcConfigurer {
     public CommonsRequestLoggingFilter requestLoggingFilter() {
         CommonsRequestLoggingFilter filter = new CommonsRequestLoggingFilter();
         filter.setIncludeQueryString(true);
-        filter.setIncludePayload(true);
-        filter.setMaxPayloadLength(10000);
-        filter.setIncludeHeaders(true);
-        filter.setAfterMessagePrefix("REQUEST DATA: ");
+        filter.setIncludePayload(false);
+        filter.setIncludeHeaders(false);
+        filter.setMaxPayloadLength(0);
+        filter.setBeforeMessagePrefix("REQUEST: ");
+        filter.setAfterMessagePrefix("COMPLETED: ");
+        filter.setIncludeClientInfo(true);
         return filter;
     }
 }

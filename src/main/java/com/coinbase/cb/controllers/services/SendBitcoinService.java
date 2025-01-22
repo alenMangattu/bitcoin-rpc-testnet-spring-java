@@ -20,9 +20,6 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.Map;
-import java.util.Optional;
-
 @Service
 public class SendBitcoinService implements Query<SendRequestDTO, TransactionDTO> {
 
@@ -67,7 +64,7 @@ public class SendBitcoinService implements Query<SendRequestDTO, TransactionDTO>
 
         // Create Bitcoin transaction using RPC
         JSONObject sendRequest = BtcRpcInterface.generateReqJson(
-                currentUserEmail,
+                sender.getWallet().getWalletName(),
                 "sendtoaddress",
                 recipient.getWallet().getAddress(),
                 request.getAmount(),
@@ -76,13 +73,41 @@ public class SendBitcoinService implements Query<SendRequestDTO, TransactionDTO>
 
         JSONObject response = BtcRpcInterface.callRpcMethod(sendRequest, sender.getWallet().getWalletName());
 
-        if (response == null || response.has("error")) {
+        if (response == null) {
+            throw new CustomErrorResponse(ErrorMessages.TRANSACTION_FAILED.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        // Check for errors in response
+        if (response.has("error") && !response.isNull("error")) {
+            JSONObject error = response.optJSONObject("error");
+            String errorMessage = error != null ? error.optString("message", "Unknown error") : 
+                                response.get("error").toString();
             throw new CustomErrorResponse(
-                    ErrorMessages.TRANSACTION_FAILED.getMessage() + (response != null ? ": " + response.getJSONObject("error").getString("message") : ""),
+                    ErrorMessages.TRANSACTION_FAILED.getMessage() + ": " + errorMessage,
                     HttpStatus.INTERNAL_SERVER_ERROR
             );
         }
 
+        // Get the transaction ID from response
+        // Bitcoin Core's sendtoaddress returns the txid directly as a string in the result field
+        String blockchainTxid;
+        try {
+            blockchainTxid = response.getString("result");
+        } catch (Exception e) {
+            throw new CustomErrorResponse(
+                    ErrorMessages.TRANSACTION_FAILED.getMessage() + ": Invalid response format",
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+
+        if (blockchainTxid == null || blockchainTxid.trim().isEmpty()) {
+            throw new CustomErrorResponse(
+                    ErrorMessages.TRANSACTION_FAILED.getMessage() + ": No transaction ID returned",
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
+
+        System.out.println(blockchainTxid); 
         // Update balances
         Wallet senderWallet = sender.getWallet();
         Wallet recipientWallet = recipient.getWallet();
@@ -100,6 +125,7 @@ public class SendBitcoinService implements Query<SendRequestDTO, TransactionDTO>
         transaction.setToUser(recipient);
         transaction.setAmount(request.getAmount());
         transaction.setMessage(request.getMessage());
+        transaction.setBlockchainTxid(blockchainTxid);
         
         transaction = transactionRepository.save(transaction);
 
@@ -108,7 +134,8 @@ public class SendBitcoinService implements Query<SendRequestDTO, TransactionDTO>
                 sender.getUser_id(),
                 recipient.getUser_id(),
                 transaction.getAmount(),
-                transaction.getMessage()
+                transaction.getMessage(),
+                transaction.getBlockchainTxid()
         ));
     }
 } 

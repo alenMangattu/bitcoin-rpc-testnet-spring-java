@@ -73,7 +73,7 @@ public class RegisterController implements Query<User, UserDTO> {
 
         Wallet wallet = new Wallet();
         wallet.setWalletName(walletName);
-        wallet.setBalance(0);
+        wallet.setBalance(0.0d);
 
         //Get address from btc
         reqJson = BtcRpcInterface.generateReqJson("id", "getnewaddress");

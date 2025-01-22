@@ -2,6 +2,7 @@ package com.coinbase.cb.configuration;
 
 import io.github.bucket4j.Bucket;
 import io.github.bucket4j.ConsumptionProbe;
+import io.github.bucket4j.distributed.proxy.ProxyManager;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.http.HttpStatus;
@@ -10,15 +11,22 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.servlet.HandlerInterceptor;
-import java.util.concurrent.ConcurrentHashMap;
 import org.json.JSONObject;
+import org.springframework.lang.NonNull;
 
 @Component
 public class RateLimitInterceptor implements HandlerInterceptor {
-    private final ConcurrentHashMap<String, Bucket> buckets = new ConcurrentHashMap<>();
+    private final ProxyManager<String> proxyManager;
+
+    public RateLimitInterceptor(ProxyManager<String> proxyManager) {
+        this.proxyManager = proxyManager;
+    }
 
     @Override
-    public boolean preHandle(HttpServletRequest request, HttpServletResponse response, Object handler) throws Exception {
+    public boolean preHandle(
+            @NonNull HttpServletRequest request,
+            @NonNull HttpServletResponse response,
+            @NonNull Object handler) throws Exception {
         if (!request.getRequestURI().startsWith("/account")) {
             return true;
         }
@@ -39,7 +47,7 @@ public class RateLimitInterceptor implements HandlerInterceptor {
         }
 
         String username = authentication.getName();
-        Bucket bucket = buckets.computeIfAbsent(username, k -> RateLimitConfig.createNewBucket());
+        Bucket bucket = proxyManager.builder().build(username, () -> RateLimitConfig.getDefaultBucketConfiguration());
 
         ConsumptionProbe probe = bucket.tryConsumeAndReturnRemaining(1);
         if (probe.isConsumed()) {

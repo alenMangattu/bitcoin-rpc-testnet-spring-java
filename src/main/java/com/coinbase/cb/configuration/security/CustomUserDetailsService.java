@@ -2,8 +2,6 @@ package com.coinbase.cb.configuration.security;
 
 import com.coinbase.cb.models.DbTables.User;
 import com.coinbase.cb.repository.UserRespository;
-import org.springframework.cache.annotation.Cacheable;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;

@@ -30,10 +30,13 @@ public class Transaction {
     private User toUser;
 
     @Column(nullable = false)
-    private Integer amount;
+    private Double amount;
 
     @Column(nullable = true)
     private String message;
+
+    @Column(name = "blockchain_txid", nullable = true)
+    private String blockchainTxid;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     @CreationTimestamp

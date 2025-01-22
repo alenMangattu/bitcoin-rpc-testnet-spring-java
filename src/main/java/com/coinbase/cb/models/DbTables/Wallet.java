@@ -32,7 +32,7 @@ public class Wallet {
     private String address;
 
     @Column(nullable = false)
-    private Integer balance = 0;
+    private Double balance = 0.0;
 
     @Column(name = "created_at", nullable = false, updatable = false)
     @CreationTimestamp

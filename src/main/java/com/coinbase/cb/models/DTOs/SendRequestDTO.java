@@ -11,7 +11,7 @@ public class SendRequestDTO {
 
     @NotNull(message = "Amount is required")
     @Positive(message = "Amount must be positive")
-    private Integer amount;
+    private Double amount;
 
     private String message; // Optional message
 } 

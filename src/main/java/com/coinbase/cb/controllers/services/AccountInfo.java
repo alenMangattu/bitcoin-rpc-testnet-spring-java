@@ -1,6 +1,5 @@
 package com.coinbase.cb.controllers.services;
 
-import org.json.JSONObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.Authentication;

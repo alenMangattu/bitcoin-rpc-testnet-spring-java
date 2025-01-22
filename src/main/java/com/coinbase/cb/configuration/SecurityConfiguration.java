@@ -40,9 +40,8 @@ public class SecurityConfiguration {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(auth -> {
                     auth.requestMatchers("/api/v*/auth/**").permitAll();
-                    auth.requestMatchers("/api/v*/auth/login").permitAll();
-                    auth.requestMatchers("/api/v*/auth/register").permitAll();
                     auth.requestMatchers(HttpMethod.GET, "/helloworld").permitAll();
+                    auth.requestMatchers("/send/**", "/account/**").authenticated();
                     auth.anyRequest().authenticated();
                 })
                 .exceptionHandling(exception -> exception

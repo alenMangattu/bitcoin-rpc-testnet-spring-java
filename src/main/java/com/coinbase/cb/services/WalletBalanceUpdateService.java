@@ -55,7 +55,7 @@ public class WalletBalanceUpdateService {
         JSONObject loadResponse = BtcRpcInterface.callRpcMethod(loadRequest);
         if (loadResponse != null) {
             if (!loadResponse.has("error") || loadResponse.isNull("error")) {
-                logger.info("Successfully loaded wallet: {}", walletName);
+                logger.debug("Successfully loaded wallet: {}", walletName);
                 return true;
             }
             
@@ -66,10 +66,12 @@ public class WalletBalanceUpdateService {
                 return true;
             }
             
+            // Only log as error if it's an actual error, not an "already loaded" case
             logger.error("Failed to load wallet {}: {}", walletName, error.getString("message"));
             return false;
         }
         
+        // Keep this as error since no response from Bitcoin Core is a real error
         logger.error("Failed to load wallet {}: No response from Bitcoin Core", walletName);
         return false;
     }
@@ -99,14 +101,13 @@ public class WalletBalanceUpdateService {
                 JSONObject response = BtcRpcInterface.callRpcMethod(balanceRequest, walletName);
                 
                 if (response != null && (!response.has("error") || response.isNull("error"))) {
-                    // Convert BTC amount to satoshis (1 BTC = 100,000,000 satoshis)
+                    // Get balance directly in BTC
                     double btcBalance = response.getDouble("result");
-                    int satoshiBalance = (int)(btcBalance * 100000000);
                     
-                    if (satoshiBalance != wallet.getBalance()) {
-                        logger.info("Updating balance for wallet {}: {} -> {} satoshis", 
-                            walletName, wallet.getBalance(), satoshiBalance);
-                        wallet.setBalance(satoshiBalance);
+                    if (btcBalance != wallet.getBalance()) {
+                        logger.info("Updating balance for wallet {}: {} -> {} BTC", 
+                            walletName, wallet.getBalance(), btcBalance);
+                        wallet.setBalance(btcBalance);
                         walletRepository.save(wallet);
                     }
                 } else if (response != null && response.has("error") && !response.isNull("error")) {
@@ -146,8 +147,7 @@ public class WalletBalanceUpdateService {
         
         if (response != null && (!response.has("error") || response.isNull("error"))) {
             double btcBalance = response.getDouble("result");
-            int satoshiBalance = (int)(btcBalance * 100000000);
-            wallet.setBalance(satoshiBalance);
+            wallet.setBalance(btcBalance);
             walletRepository.save(wallet);
         } else if (response != null && response.has("error") && !response.isNull("error")) {
             JSONObject error = response.getJSONObject("error");
