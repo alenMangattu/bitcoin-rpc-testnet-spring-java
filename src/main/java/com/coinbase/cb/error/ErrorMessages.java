@@ -10,10 +10,10 @@ public enum ErrorMessages {
     INVALID_CREDENTIALS("Invalid email or password."),
     USER_NOT_FOUND("User not found with the provided email."),
     ERROR_GETTING_ADDRESS("An error occurred while attempting to get the address. Please try again."),
-
-
-    ;
-
+    SENDER_NOT_FOUND("Sender account not found."),
+    RECIPIENT_NOT_FOUND("Recipient not found with the provided ID or wallet address."),
+    INSUFFICIENT_BALANCE("Insufficient balance to complete the transaction."),
+    TRANSACTION_FAILED("Failed to send Bitcoin. Please try again later.");
 
     private final String message;
 

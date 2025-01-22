@@ -37,6 +37,16 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             @NonNull HttpServletResponse response,
             @NonNull FilterChain filterChain
     ) throws ServletException, IOException {
+        String path = request.getRequestURI();
+        
+        // Skip JWT validation for public endpoints using exact path matching
+        if (path.equals("/api/v1/auth/login") || 
+            path.equals("/api/v1/auth/register") || 
+            path.equals("/helloworld")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
+
         final String authHeader = request.getHeader("Authorization");
         
         logger.debug("Processing request for path: {}", request.getRequestURI());
