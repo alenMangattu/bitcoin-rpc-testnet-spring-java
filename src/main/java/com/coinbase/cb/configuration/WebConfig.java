@@ -6,6 +6,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import org.springframework.web.filter.CommonsRequestLoggingFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.lang.NonNull;
+import com.coinbase.cb.configuration.ratelimit.RateLimitInterceptor;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {

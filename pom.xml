@@ -145,6 +145,7 @@
 		<dependency>
 			<groupId>org.flywaydb</groupId>
 			<artifactId>flyway-core</artifactId>
+			<version>9.22.3</version>
 		</dependency>
 
 		<!-- Flyway PostgreSQL support -->
@@ -152,27 +153,26 @@
 			<groupId>org.flywaydb</groupId>
 			<artifactId>flyway-database-postgresql</artifactId>
 		</dependency>
-
-		<!-- Bucket4j Redis dependencies -->
-		<dependency>
-			<groupId>com.bucket4j</groupId>
-			<artifactId>bucket4j-core</artifactId>
-			<version>8.7.0</version>
-		</dependency>
-		<dependency>
-			<groupId>com.bucket4j</groupId>
-			<artifactId>bucket4j-jcache</artifactId>
-			<version>8.7.0</version>
-		</dependency>
-		<dependency>
-			<groupId>org.redisson</groupId>
-			<artifactId>redisson</artifactId>
-			<version>3.27.1</version>
-		</dependency>
+		<!-- Cache API -->
 		<dependency>
 			<groupId>javax.cache</groupId>
 			<artifactId>cache-api</artifactId>
 			<version>1.1.1</version>
+		</dependency>
+
+
+		<!-- Cache API -->
+		<!-- <dependency>
+			<groupId>jakarta.cache</groupId>
+			<artifactId>cache-api</artifactId>
+			<version>3.1.0</version>
+		.1endency> -->
+
+		<!-- Cache implementation -->
+		<dependency>
+			<groupId>com.github.ben-manes.caffeine</groupId>
+			<artifactId>caffeine</artifactId>
+			<version>3.1.8</version>
 		</dependency>
 
 	</dependencies>

@@ -26,13 +26,16 @@ public class SendBitcoinService implements Query<SendRequestDTO, TransactionDTO>
     private final UserRespository userRepository;
     private final TransactionRepository transactionRepository;
     private final WalletRepository walletRepository;
+    private final AccountInfo accountInfo;
 
     public SendBitcoinService(UserRespository userRepository, 
                              TransactionRepository transactionRepository,
-                             WalletRepository walletRepository) {
+                             WalletRepository walletRepository,
+                             AccountInfo accountInfo) {
         this.userRepository = userRepository;
         this.transactionRepository = transactionRepository;
         this.walletRepository = walletRepository;
+        this.accountInfo = accountInfo;
     }
 
     @Override
@@ -118,6 +121,10 @@ public class SendBitcoinService implements Query<SendRequestDTO, TransactionDTO>
         // Save updated wallets to database
         walletRepository.save(senderWallet);
         walletRepository.save(recipientWallet);
+
+        // Clear account caches for both sender and recipient
+        accountInfo.clearAccountCache(sender.getEmail());
+        accountInfo.clearAccountCache(recipient.getEmail());
 
         // Record transaction
         Transaction transaction = new Transaction();
