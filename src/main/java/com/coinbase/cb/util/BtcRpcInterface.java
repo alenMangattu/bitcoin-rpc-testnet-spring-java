@@ -54,7 +54,7 @@ public class BtcRpcInterface {
 
             // Send request and parse response
             HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-            System.out.println(response.body().toString());
+            // System.out.println(response.body().toString());
             return new JSONObject(response.body());
         } catch (Exception e) {
             e.printStackTrace();
