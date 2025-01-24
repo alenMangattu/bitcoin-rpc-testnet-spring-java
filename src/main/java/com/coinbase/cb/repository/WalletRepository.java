@@ -25,3 +25,4 @@ public interface WalletRepository extends JpaRepository<Wallet, Long> {
         @Param("totalPartitions") int totalPartitions, 
         Pageable pageable);
 }
+

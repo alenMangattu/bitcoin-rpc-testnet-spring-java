@@ -46,3 +46,4 @@ public class Transaction {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 }
+

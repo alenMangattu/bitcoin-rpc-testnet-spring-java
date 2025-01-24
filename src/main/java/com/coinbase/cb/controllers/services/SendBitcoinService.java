@@ -18,8 +18,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
+/**
+ * Service responsible for handling Bitcoin send operations.
+ * Implements atomic transactions for both database updates and blockchain operations.
+ * Uses pessimistic locking to prevent concurrent modifications of the same accounts.
+ */
 @Service
 public class SendBitcoinService implements Query<SendRequestDTO, TransactionDTO> {
 
@@ -38,25 +45,46 @@ public class SendBitcoinService implements Query<SendRequestDTO, TransactionDTO>
         this.accountInfo = accountInfo;
     }
 
+    /**
+     * Executes a Bitcoin send operation with full transaction safety.
+     * 
+     * The method ensures atomicity by:
+     * 1. Locking both sender and recipient records
+     * 2. Verifying balances
+     * 3. Creating a pending transaction record
+     * 4. Executing the blockchain transaction
+     * 5. Updating balances and transaction status
+     * 
+     * If any step fails, the entire transaction is rolled back.
+     * 
+     * @param request The send request containing amount, recipient, and message
+     * @return ResponseEntity containing the transaction details
+     * @throws CustomErrorResponse for various error conditions (insufficient balance, user not found, etc.)
+     */
     @Override
-    @Transactional
+    @Transactional(isolation = Isolation.SERIALIZABLE)
     public ResponseEntity<TransactionDTO> execute(SendRequestDTO request) {
+        // Verify transaction management is active
+        if (!TransactionSynchronizationManager.isActualTransactionActive()) {
+            throw new CustomErrorResponse("Transaction not properly initialized", HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
         // Get current authenticated user
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         String currentUserEmail = authentication.getName();
 
-        User sender = userRepository.findByEmailWithWallet(currentUserEmail)
+        // Lock both sender and recipient records for update
+        User sender = userRepository.findByEmailWithWalletForUpdate(currentUserEmail)
                 .orElseThrow(() -> new CustomErrorResponse(ErrorMessages.SENDER_NOT_FOUND.getMessage(), HttpStatus.NOT_FOUND));
 
-        // Find recipient by userId or wallet address
+        // Find and lock recipient by userId or wallet address
         User recipient;
         try {
             Long recipientId = Long.parseLong(request.getRecipient());
-            recipient = userRepository.findByIdWithWallet(recipientId)
+            recipient = userRepository.findByIdWithWalletForUpdate(recipientId)
                     .orElseThrow(() -> new CustomErrorResponse(ErrorMessages.RECIPIENT_NOT_FOUND.getMessage(), HttpStatus.NOT_FOUND));
         } catch (NumberFormatException e) {
-            // If not a userId, treat as wallet address
-            recipient = userRepository.findByWalletAddress(request.getRecipient())
+            recipient = userRepository.findByWalletAddressForUpdate(request.getRecipient())
                     .orElseThrow(() -> new CustomErrorResponse(ErrorMessages.RECIPIENT_NOT_FOUND.getMessage(), HttpStatus.NOT_FOUND));
         }
 
@@ -65,84 +93,82 @@ public class SendBitcoinService implements Query<SendRequestDTO, TransactionDTO>
             throw new CustomErrorResponse(ErrorMessages.INSUFFICIENT_BALANCE.getMessage(), HttpStatus.BAD_REQUEST);
         }
 
-        // Create Bitcoin transaction using RPC
-        JSONObject sendRequest = BtcRpcInterface.generateReqJson(
-                sender.getWallet().getWalletName(),
-                "sendtoaddress",
-                recipient.getWallet().getAddress(),
-                request.getAmount(),
-                request.getMessage()
-        );
-
-        JSONObject response = BtcRpcInterface.callRpcMethod(sendRequest, sender.getWallet().getWalletName());
-
-        if (response == null) {
-            throw new CustomErrorResponse(ErrorMessages.TRANSACTION_FAILED.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
-        }
-
-        // Check for errors in response
-        if (response.has("error") && !response.isNull("error")) {
-            JSONObject error = response.optJSONObject("error");
-            String errorMessage = error != null ? error.optString("message", "Unknown error") : 
-                                response.get("error").toString();
-            throw new CustomErrorResponse(
-                    ErrorMessages.TRANSACTION_FAILED.getMessage() + ": " + errorMessage,
-                    HttpStatus.INTERNAL_SERVER_ERROR
-            );
-        }
-
-        // Get the transaction ID from response
-        // Bitcoin Core's sendtoaddress returns the txid directly as a string in the result field
-        String blockchainTxid;
-        try {
-            blockchainTxid = response.getString("result");
-        } catch (Exception e) {
-            throw new CustomErrorResponse(
-                    ErrorMessages.TRANSACTION_FAILED.getMessage() + ": Invalid response format",
-                    HttpStatus.INTERNAL_SERVER_ERROR
-            );
-        }
-
-        if (blockchainTxid == null || blockchainTxid.trim().isEmpty()) {
-            throw new CustomErrorResponse(
-                    ErrorMessages.TRANSACTION_FAILED.getMessage() + ": No transaction ID returned",
-                    HttpStatus.INTERNAL_SERVER_ERROR
-            );
-        }
-
-        System.out.println(blockchainTxid); 
-        // Update balances
-        Wallet senderWallet = sender.getWallet();
-        Wallet recipientWallet = recipient.getWallet();
-        
-        senderWallet.setBalance(senderWallet.getBalance() - request.getAmount());
-        recipientWallet.setBalance(recipientWallet.getBalance() + request.getAmount());
-        
-        // Save updated wallets to database
-        walletRepository.save(senderWallet);
-        walletRepository.save(recipientWallet);
-
-        // Clear account caches for both sender and recipient
-        accountInfo.clearAccountCache(sender.getEmail());
-        accountInfo.clearAccountCache(recipient.getEmail());
-
-        // Record transaction
+        // First record the pending transaction
         Transaction transaction = new Transaction();
         transaction.setFromUser(sender);
         transaction.setToUser(recipient);
         transaction.setAmount(request.getAmount());
         transaction.setMessage(request.getMessage());
-        transaction.setBlockchainTxid(blockchainTxid);
-        
         transaction = transactionRepository.save(transaction);
 
-        return ResponseEntity.ok(new TransactionDTO(
-                transaction.getTxid(),
-                sender.getUser_id(),
-                recipient.getUser_id(),
-                transaction.getAmount(),
-                transaction.getMessage(),
-                transaction.getBlockchainTxid()
-        ));
+        // Execute Bitcoin RPC transaction
+        try {
+            JSONObject sendRequest = BtcRpcInterface.generateReqJson(
+                    sender.getWallet().getWalletName(),
+                    "sendtoaddress",
+                    recipient.getWallet().getAddress(),
+                    request.getAmount(),
+                    request.getMessage()
+            );
+
+            JSONObject response = BtcRpcInterface.callRpcMethod(sendRequest, sender.getWallet().getWalletName());
+            
+            if (response == null) {
+                throw new CustomErrorResponse(ErrorMessages.TRANSACTION_FAILED.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+            }
+
+            // Validate RPC response
+            if (response.has("error") && !response.isNull("error")) {
+                JSONObject error = response.optJSONObject("error");
+                String errorMessage = error != null ? error.optString("message", "Unknown error") : 
+                                    response.get("error").toString();
+                throw new CustomErrorResponse(
+                        ErrorMessages.TRANSACTION_FAILED.getMessage() + ": " + errorMessage,
+                        HttpStatus.INTERNAL_SERVER_ERROR
+                );
+            }
+
+            String blockchainTxid = response.getString("result");
+            if (blockchainTxid == null || blockchainTxid.trim().isEmpty()) {
+                throw new CustomErrorResponse(
+                        ErrorMessages.TRANSACTION_FAILED.getMessage() + ": No transaction ID returned",
+                        HttpStatus.INTERNAL_SERVER_ERROR
+                );
+            }
+
+            // Update transaction with blockchain txid
+            transaction.setBlockchainTxid(blockchainTxid);
+            transaction = transactionRepository.save(transaction);
+
+            // Update wallet balances
+            Wallet senderWallet = sender.getWallet();
+            Wallet recipientWallet = recipient.getWallet();
+            
+            senderWallet.setBalance(senderWallet.getBalance() - request.getAmount());
+            recipientWallet.setBalance(recipientWallet.getBalance() + request.getAmount());
+            
+            walletRepository.save(senderWallet);
+            walletRepository.save(recipientWallet);
+
+            // Clear account caches
+            accountInfo.clearAccountCache(sender.getEmail());
+            accountInfo.clearAccountCache(recipient.getEmail());
+
+            return ResponseEntity.ok(new TransactionDTO(
+                    transaction.getTxid(),
+                    sender.getUser_id(),
+                    recipient.getUser_id(),
+                    transaction.getAmount(),
+                    transaction.getMessage(),
+                    transaction.getBlockchainTxid()
+            ));
+
+        } catch (Exception e) {
+            // Any exception triggers a full transaction rollback
+            throw new CustomErrorResponse(
+                    ErrorMessages.TRANSACTION_FAILED.getMessage() + ": " + e.getMessage(),
+                    HttpStatus.INTERNAL_SERVER_ERROR
+            );
+        }
     }
 } 

@@ -29,3 +29,4 @@ public class CbApplication {
 		RegisterInputValidator.setUserRepository(this.userRespository);
 	}
 }
+

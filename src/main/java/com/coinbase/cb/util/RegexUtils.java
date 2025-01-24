@@ -25,3 +25,4 @@ public class RegexUtils {
         return input != null && input.matches(regex);
     }
 }
+
