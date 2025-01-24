@@ -42,3 +42,4 @@ public class Wallet {
     @UpdateTimestamp
     private LocalDateTime updatedAt;
 }
+

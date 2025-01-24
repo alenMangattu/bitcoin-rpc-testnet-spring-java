@@ -39,3 +39,4 @@ public interface UserRespository extends JpaRepository<User, Long> {
     @Query("SELECT u FROM User u LEFT JOIN FETCH u.wallet w WHERE w.address = :address")
     Optional<User> findByWalletAddressForUpdate(@Param("address") String address);
 }
+

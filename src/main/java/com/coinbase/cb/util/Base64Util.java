@@ -31,3 +31,4 @@ public class Base64Util {
         return Base64.getEncoder().encodeToString(bytes);
     }
 }
+

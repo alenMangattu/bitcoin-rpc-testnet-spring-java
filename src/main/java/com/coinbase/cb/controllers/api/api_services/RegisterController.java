@@ -93,3 +93,4 @@ public class RegisterController implements Query<User, UserDTO> {
         return wallet;
     }
 }
+

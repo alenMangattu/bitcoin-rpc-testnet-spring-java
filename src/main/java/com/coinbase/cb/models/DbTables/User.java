@@ -66,3 +66,4 @@ public class User implements Serializable {
     @JsonIgnore
     private Wallet wallet;
 }
+

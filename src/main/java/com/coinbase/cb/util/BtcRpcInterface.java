@@ -67,3 +67,4 @@ public class BtcRpcInterface {
         return callRpcMethod(requestBody, null);
     }
 }
+
