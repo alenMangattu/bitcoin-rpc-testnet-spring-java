@@ -17,11 +17,21 @@ import org.springframework.data.redis.serializer.RedisSerializationContext;
 import java.time.Duration;
 import com.coinbase.cb.models.DbTables.User;
 
-// Enables Spring caching system
+/**
+ * Redis configuration for caching and session management.
+ * Configures Redis connection, serialization, and caching behavior.
+ * Enables Spring's caching system with Redis as the backing store.
+ */
 @Configuration
 @EnableCaching
 public class RedisConfig {
 
+    /**
+     * Configures the ObjectMapper for JSON serialization.
+     * Adds support for Java 8 date/time types and disables timestamp serialization.
+     *
+     * @return Configured ObjectMapper instance
+     */
     @Bean
     public ObjectMapper objectMapper() {
         ObjectMapper mapper = new ObjectMapper();
@@ -30,6 +40,15 @@ public class RedisConfig {
         return mapper;
     }
 
+    /**
+     * Configures the Redis cache manager with custom serialization and TTL settings.
+     * Uses Jackson2JsonRedisSerializer for value serialization to support complex objects.
+     * Sets a default TTL of 1 hour for cached entries.
+     *
+     * @param connectionFactory The Redis connection factory
+     * @param objectMapper The configured ObjectMapper for JSON serialization
+     * @return Configured RedisCacheManager instance
+     */
     @Bean
     public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory, ObjectMapper objectMapper) {
         Jackson2JsonRedisSerializer<Object> serializer = new Jackson2JsonRedisSerializer<>(objectMapper, Object.class);

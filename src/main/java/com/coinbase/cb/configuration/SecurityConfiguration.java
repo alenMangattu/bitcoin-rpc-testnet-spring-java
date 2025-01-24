@@ -23,6 +23,11 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.Arrays;
 
+/**
+ * Security configuration for the application.
+ * Configures JWT authentication, CORS, CSRF, and endpoint security.
+ * Uses stateless session management for better scalability.
+ */
 @Configuration
 @EnableWebSecurity
 public class SecurityConfiguration {
@@ -33,6 +38,18 @@ public class SecurityConfiguration {
         this.jwtAuthFilter = jwtAuthFilter;
     }
 
+    /**
+     * Configures the security filter chain with JWT authentication and authorization rules.
+     * Sets up:
+     * - CSRF protection
+     * - Stateless session management
+     * - Public and protected endpoints
+     * - Custom authentication failure handling
+     * - JWT filter integration
+     *
+     * @param http The HttpSecurity to configure
+     * @return The configured SecurityFilterChain
+     */
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
@@ -63,16 +80,28 @@ public class SecurityConfiguration {
         return http.build();
     }
 
+    /**
+     * Provides the authentication manager bean for handling authentication requests.
+     */
     @Bean
     public AuthenticationManager authenticationManager(AuthenticationConfiguration config) throws Exception {
         return config.getAuthenticationManager();
     }
 
+    /**
+     * Configures the password encoder for secure password storage.
+     * Uses BCrypt hashing algorithm with default strength.
+     */
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * Configures CORS settings for cross-origin requests.
+     * Allows specific origins, methods, and headers.
+     * Sets appropriate timeouts and credentials handling.
+     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration configuration = new CorsConfiguration();

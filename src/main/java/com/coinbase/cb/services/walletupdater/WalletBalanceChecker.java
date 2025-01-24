@@ -2,8 +2,8 @@ package com.coinbase.cb.services.walletupdater;
 
 import com.coinbase.cb.util.BtcRpcInterface;
 import org.json.JSONObject;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+// import org.slf4j.Logger;
+// import org.slf4j.LoggerFactory;
 import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 
@@ -13,7 +13,7 @@ import java.util.concurrent.TimeUnit;
 
 @Component
 public class WalletBalanceChecker {
-    private static final Logger logger = LoggerFactory.getLogger(WalletBalanceChecker.class);
+    // private static final Logger logger = LoggerFactory.getLogger(WalletBalanceChecker.class);
     private static final String WALLET_BALANCE_CACHE = "wallet-balances";
     private static final int MIN_CONFIRMATIONS = 3;
 

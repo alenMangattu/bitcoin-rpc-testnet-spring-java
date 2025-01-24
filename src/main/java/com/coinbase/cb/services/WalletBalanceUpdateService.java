@@ -24,7 +24,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @Service
 public class WalletBalanceUpdateService {
     private static final Logger logger = LoggerFactory.getLogger(WalletBalanceUpdateService.class);
-    private static final String LAST_BLOCK_HEIGHT_KEY = "btc-last-block-height";
+    // private static final String LAST_BLOCK_HEIGHT_KEY = "btc-last-block-height";
     private static final String LAST_PROCESSED_TXS_KEY = "btc-processed-txs";
     private static final int BATCH_SIZE = 1000;
     
